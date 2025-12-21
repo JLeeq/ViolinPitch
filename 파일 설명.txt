@@ -1,0 +1,5 @@
+파일 설명
+
+열기
+cd C:\violincoachAI
+npm run dev

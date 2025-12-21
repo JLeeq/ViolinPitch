@@ -1,0 +1,16 @@
+[Unit]
+Description=Violin Coach AI FastAPI Application
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/app/backend
+Environment="PATH=/home/ubuntu/app/backend/venv/bin"
+ExecStart=/home/ubuntu/app/backend/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
