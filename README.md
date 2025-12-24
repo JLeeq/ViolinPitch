@@ -1,8 +1,14 @@
-# 🎻 Violin Pitch
+# 🎻 Violin Practice Assistant, Violin Pitch
 
-A fully functional violin tuning and coaching application with real-time pitch detection, recording, and analysis features.
+By Jian Lee
+Oct – Nov 2025, Irvine, CA
 
-**Website**: [violinpitch.com](https://violinpitch.com)
+## 📎 Links
+
+- 🌐 **Live Demo**: [https://violinpitch.com](https://violinpitch.com)
+- 📧 **Contact**: jianlee.mail@gmail.com
+- 💼 **LinkedIn**: https://www.linkedin.com/in/jianleee/
+
 
 ## Features
 
@@ -32,14 +38,6 @@ A fully functional violin tuning and coaching application with real-time pitch d
    - Provides personalized feedback and suggestions
    - Comprehensive practice reports
 
-## Design
-
-- **Wood texture background**: Natural, warm aesthetic
-- **Clean white cards**: Easy-to-read content
-- **Trajan-style typography**: Classic, elegant fonts (Cinzel)
-- **Responsive**: Works on desktop and mobile devices
-
-## Getting Started
 
 ### Prerequisites
 
@@ -82,52 +80,32 @@ See [DEPLOY.md](DEPLOY.md) for detailed deployment instructions.
 
 ## Tech Stack
 
-- **React** - UI framework
-- **Tailwind CSS** - Styling
-- **Vite** - Build tool
-- **pitchfinder** - Pitch detection library (YIN algorithm)
-- **Cinzel** - Google Fonts (Trajan-style typography)
+| 영역 | 기술 |
+|------|------|
+| **Frontend** | React, Vite, Tailwind CSS |
+| **Backend** | FastAPI, SQLAlchemy, Pydantic |
+| **Database** | PostgreSQL (Supabase) |
+| **Auth** | Supabase Auth, JWT |
+| **Storage** | AWS S3 |
+| **Infra** | AWS EC2, Nginx, Let's Encrypt (HTTPS) |
+| **AI 협업** | Cursor AI (Claude) |
 
-## How to Use
 
-### 🎵 Tuner
-1. Open the Tuner tab
-2. Allow microphone access
-3. Play a note on your violin
-4. See real-time pitch detection and tuning feedback
+## 🚀 주요 개발 과정
 
-### 🎼 Metronome
-1. Set your target BPM
-2. Click Start to hear the metronome
-3. Play along - the background color indicates if you're on tempo
+### 1️⃣ 실시간 음정 감지 구현
+- Web Audio API + FFT 분석
+- 주파수 → 음계 변환 알고리즘
 
-### 🎻 Record & Analysis
-1. Click "Start Recording"
-2. Play your violin piece
-3. Watch the waveform and note detection in real-time
-4. Click "Stop Recording" when finished
-5. Click "Analyze" to see detailed results
+### 2️⃣ 사용자 인증 시스템
+- Supabase Auth (이메일/Google OAuth)
+- JWT 토큰 기반 API 인증
 
-### 📊 Analysis
-1. Record your playing first
-2. Navigate to Analysis tab
-3. View detailed analysis with:
-   - Individual note accuracy
-   - Pattern analysis (consistent flatness/sharpness)
-   - Octave-specific performance
-   - Personalized feedback and recommendations
+### 3️⃣ AWS 인프라 구축
+- EC2 + Nginx 리버스 프록시
+- Let's Encrypt SSL (HTTPS 필수 - 마이크 권한)
+- RDS → Supabase 마이그레이션 (비용 최적화) (**AWS RDS → Supabase 마이그레이션으로 월 비용 절감**)
 
-## Note Range
-
-The application analyzes the violin range: **G3 (196 Hz) ~ E7 (2637 Hz)**
-
-## Browser Support
-
-- ✅ Chrome (Recommended)
-- ✅ Safari
-- ✅ Firefox
-- ✅ Edge
-- ✅ Mobile browsers (HTTPS required for microphone)
 
 ## License
 
