@@ -93,22 +93,18 @@ See [DEPLOY.md](DEPLOY.md) for detailed deployment instructions.
 | **AI 협업** | Cursor AI (Claude) |
 
 
-## 🚀 주요 개발 과정
+## Development Process
 
-### 1️⃣ 실시간 음정 감지 구현
-- Web Audio API + FFT 분석
-- 주파수 → 음계 변환 알고리즘
+### 1. Real-Time Pitch Detection
+- Web Audio API + FFT analysis
+- Frequency → musical note conversion algorithm
 
-### 2️⃣ 사용자 인증 시스템
-- Supabase Auth (이메일/Google OAuth)
-- JWT 토큰 기반 API 인증
+### 2. User Authentication System
+- Supabase Auth (Email / Google OAuth)
+- JWT token-based API authentication
 
-### 3️⃣ AWS 인프라 구축
-- EC2 + Nginx 리버스 프록시
-- Let's Encrypt SSL (HTTPS 필수 - 마이크 권한)
-- RDS → Supabase 마이그레이션 (비용 최적화) (**AWS RDS → Supabase 마이그레이션으로 월 비용 절감**)
+### 3. AWS Infrastructure Setup
+- EC2 + Nginx reverse proxy
+- Let's Encrypt SSL (HTTPS required for microphone permissions)
+- RDS → Supabase migration for cost optimization (**Reduced monthly costs by migrating from AWS RDS to Supabase**)
 
-
-## License
-
-MIT License
