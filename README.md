@@ -2,6 +2,7 @@
 
 By Jian Lee
 Oct – Nov 2025, Irvine, CA
+more detail: https://www.linkedin.com/posts/jianleee_i-studied-the-violin-for-seven-years-through-activity-7409539165589168131-Gpvg?utm_source=share&utm_medium=member_desktop&rcm=ACoAAEuJUtMBpdDPXXm7UTo9Z0abB5vcvXUFdxA
 
 ## 📎 Links
 
