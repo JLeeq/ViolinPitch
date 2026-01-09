@@ -1,6 +1,6 @@
 import { useAuth } from '../context/AuthContext'
 
-function Navigation({ currentPage, setCurrentPage, onBackToHome }) {
+function Navigation({ currentPage, setCurrentPage }) {
   const { user, signOut } = useAuth()
   
   const navItems = [
@@ -19,19 +19,7 @@ function Navigation({ currentPage, setCurrentPage, onBackToHome }) {
     <nav className="bg-brown-100 shadow-md relative z-50 border-b border-brown-300">
       <div className="container mx-auto px-2 md:px-4 max-w-6xl">
         <div className="flex items-center justify-between h-14 md:h-16">
-          {/* Back to Home Button */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBackToHome}
-              className="flex items-center gap-2 px-3 py-2 bg-white text-brown-700 rounded-lg hover:bg-brown-50 transition-all duration-200 text-sm font-medium border border-brown-200"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span className="hidden md:inline">Home</span>
-            </button>
-            <h1 className="text-lg md:text-2xl font-bold text-brown-800 font-trajan">Violin Pitch</h1>
-          </div>
+          <h1 className="text-lg md:text-2xl font-bold text-brown-800 font-trajan">Violin Pitch</h1>
           
           <div className="flex items-center gap-2 md:gap-4">
             <div className="flex space-x-0.5 md:space-x-2 overflow-x-auto">

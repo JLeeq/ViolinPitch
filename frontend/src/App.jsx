@@ -22,9 +22,6 @@ function AppContent() {
     setCurrentPage('record')
   }
 
-  const handleBackToHome = () => {
-    setCurrentPage('home')
-  }
 
   // 로그인이 필요한 페이지에서 로그인 안되어 있으면 홈으로
   const requiresAuth = ['record', 'analysis', 'detailed-analysis']
@@ -54,7 +51,7 @@ function AppContent() {
   return (
     <div className={`min-h-screen relative font-trajan ${currentPage === 'metronome' ? '' : currentPage === 'home' ? '' : 'wood-bg'}`}>
       {currentPage !== 'home' && (
-        <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} onBackToHome={handleBackToHome} />
+        <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
       )}
       <main className={currentPage === 'home' ? '' : currentPage === 'metronome' ? 'relative' : 'container mx-auto px-2 md:px-4 py-4 md:py-8 max-w-6xl'}>
         {renderPage()}
