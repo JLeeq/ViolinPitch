@@ -19,15 +19,18 @@ function AppContent() {
   }
 
   const handleBack = () => {
-    setCurrentPage('record')
+    // Go back to previous page - check if we came from record or analysis
+    const previousNotes = localStorage.getItem('violin-recorded-notes')
+    if (previousNotes) {
+      // If we have notes, go back to analysis tab (guest can access it now)
+      setCurrentPage('analysis')
+    } else {
+      setCurrentPage('record')
+    }
   }
 
-
-  // 로그인이 필요한 페이지에서 로그인 안되어 있으면 홈으로
-  const requiresAuth = ['record', 'analysis', 'detailed-analysis']
-  if (requiresAuth.includes(currentPage) && !user) {
-    setCurrentPage('home')
-  }
+  // Allow guests to access analysis tab for sample analysis
+  // (Previously required auth, but now we allow sample analysis for guests)
 
   const renderPage = () => {
     switch (currentPage) {
@@ -40,7 +43,7 @@ function AppContent() {
       case 'record':
         return <RecordAndAnalysis onAnalyze={handleAnalyze} />
       case 'analysis':
-        return <Analysis />
+        return <Analysis setCurrentPage={setCurrentPage} />
       case 'detailed-analysis':
         return <DetailedAnalysis recordings={selectedRecordings} onBack={handleBack} />
       default:

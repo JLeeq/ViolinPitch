@@ -4,9 +4,14 @@ import { useSettings } from '../context/SettingsContext'
 import { detectPitch } from '../utils/pitchDetection'
 import { noteRepository } from '../storage/noteRepository'
 import { apiService } from '../services/aiAnalysisService'
+import { useAuth } from '../context/AuthContext'
+import { analyzeSampleAudio } from '../utils/sampleAnalysis'
+import { SAMPLE_AUDIO, SAMPLE_AUDIO_ALLOWLIST } from '../lib/sampleAudio'
 
 function RecordAndAnalysis({ onBack, onAnalyze }) {
   const { settings } = useSettings()
+  const { user } = useAuth()
+  const isGuest = !user
   const [isRecording, setIsRecording] = useState(false)
   const [recordedAudio, setRecordedAudio] = useState(null)
   const [recordedFiles, setRecordedFiles] = useState([])
@@ -318,9 +323,47 @@ function RecordAndAnalysis({ onBack, onAnalyze }) {
 
   const handleAnalysis = () => {
     if (selectedFiles.length === 0) return
+    
+    // Check if sample is selected
+    if (selectedFiles.includes('sample')) {
+      handleSampleAnalyze(SAMPLE_AUDIO.id)
+      return
+    }
+    
     const selectedFileData = recordedFiles.filter(f => selectedFiles.includes(f.id))
     if (onAnalyze) {
       onAnalyze(selectedFileData)
+    }
+  }
+
+  const handleSampleAnalyze = async (sampleId) => {
+    if (!SAMPLE_AUDIO_ALLOWLIST.includes(sampleId)) {
+      setError('Invalid sample ID')
+      return
+    }
+
+    setError(null)
+    try {
+      // Fetch and analyze the sample audio file
+      const response = await fetch(SAMPLE_AUDIO.url)
+      if (!response.ok) {
+        throw new Error('Failed to load sample audio')
+      }
+      const audioBlob = await response.blob()
+      
+      // Analyze using the same pipeline as real recordings
+      const sampleNotes = await analyzeSampleAudio(audioBlob, sampleId, settings.concertA)
+      
+      // Save to localStorage (same format as real recordings)
+      localStorage.setItem('violin-recorded-notes', JSON.stringify(sampleNotes))
+      
+      // Navigate to DetailedAnalysis (same flow as real recordings)
+      if (onAnalyze) {
+        onAnalyze([])
+      }
+    } catch (error) {
+      console.error('Error analyzing sample:', error)
+      setError('Failed to analyze sample. Please try again.')
     }
   }
 
@@ -332,7 +375,7 @@ function RecordAndAnalysis({ onBack, onAnalyze }) {
           <p className="text-sm md:text-base text-orange-700 font-semibold">{error}</p>
         </div>
       )}
-      
+
       {/* Current Status */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 max-w-4xl mx-auto">
         <div className="bg-white rounded-xl shadow-lg border border-brown-200 p-4 md:p-6 text-center">
@@ -352,7 +395,8 @@ function RecordAndAnalysis({ onBack, onAnalyze }) {
         </div>
         <div className="bg-white rounded-xl shadow-lg border border-brown-200 p-4 md:p-6 text-center">
           <p className="text-xs md:text-sm text-brown-700 font-bold mb-2">Recordings</p>
-          <p className="text-xl md:text-3xl font-bold text-brown-800">{recordedFiles.length}</p>
+          <p className="text-xl md:text-3xl font-bold text-brown-800">{recordedFiles.length + 1}</p>
+          <p className="text-xs text-brown-500 mt-1">(1 sample + {recordedFiles.length} user)</p>
         </div>
       </div>
 
@@ -384,9 +428,15 @@ function RecordAndAnalysis({ onBack, onAnalyze }) {
           {!isRecording ? (
             <button 
               onClick={startRecording}
-              className="w-full sm:w-auto px-8 md:px-12 py-3 md:py-4 bg-emerald-600 text-white rounded-xl shadow-lg font-bold text-base md:text-lg hover:bg-emerald-700 transition-all duration-200 transform hover:scale-105"
+              disabled={isGuest}
+              className={`w-full sm:w-auto px-8 md:px-12 py-3 md:py-4 rounded-xl shadow-lg font-bold text-base md:text-lg transition-all duration-200 ${
+                isGuest 
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700 transform hover:scale-105'
+              }`}
+              title={isGuest ? 'Please login to record' : 'Start recording'}
             >
-              Start Recording
+              Start Recording {isGuest && '(Login Required)'}
             </button>
           ) : (
             <button 
@@ -406,44 +456,118 @@ function RecordAndAnalysis({ onBack, onAnalyze }) {
             </button>
           )}
         </div>
+        {isGuest && (
+          <p className="text-center text-sm text-gray-500 mt-2">
+            Login to record your own violin playing
+          </p>
+        )}
       </div>
 
-      {/* Recorded Files List */}
-      {recordedFiles.length > 0 && (
-        <div className="max-w-4xl mx-auto px-2">
-          <div className="bg-white rounded-xl shadow-lg border border-brown-200 p-4 md:p-6">
-            <h3 className="text-lg md:text-xl font-bold text-brown-800 mb-4 font-trajan">Recorded Files</h3>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {recordedFiles.map((file) => (
-                <div key={file.id} className="flex items-center gap-4 p-4 bg-brown-50 rounded-lg hover:bg-brown-100 transition-colors border border-brown-200">
-                  <input
-                    type="checkbox"
-                    checked={selectedFiles.includes(file.id)}
-                    onChange={() => toggleFileSelection(file.id)}
-                    className="w-5 h-5 text-emerald-600"
-                  />
-                  <div className="flex-grow">
-                    <p className="font-semibold text-brown-800">{file.name}</p>
-                    <p className="text-xs text-brown-600">{new Date(file.date).toLocaleString()}</p>
-                  </div>
-                  <button
-                    onClick={() => playFile(file.url, file.id)}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    {playingFileId === file.id ? '⏸ Pause' : '▶ Play'}
-                  </button>
-                  <button
-                    onClick={() => deleteFile(file.id)}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-                  >
-                    Delete
-                  </button>
+      {/* Recorded Files List - Always show with sample file at top */}
+      <div className="max-w-4xl mx-auto px-2">
+        <div className="bg-white rounded-xl shadow-lg border border-brown-200 p-4 md:p-6">
+          <h3 className="text-lg md:text-xl font-bold text-brown-800 mb-4 font-trajan">Recorded Files</h3>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {/* Sample file - always at top */}
+            <div className="flex items-center gap-4 p-4 bg-amber-50 rounded-lg border border-amber-300 border-2">
+              <input
+                type="checkbox"
+                checked={selectedFiles.includes('sample')}
+                onChange={() => toggleFileSelection('sample')}
+                className="w-5 h-5 text-emerald-600"
+              />
+              <div className="flex-grow">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-brown-800">{SAMPLE_AUDIO.title}</p>
+                  <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-medium">Sample</span>
                 </div>
-              ))}
+                <p className="text-xs text-brown-600">Demo audio file</p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (playingFileId === 'sample') {
+                    if (currentAudioRef.current) {
+                      currentAudioRef.current.pause()
+                      currentAudioRef.current.currentTime = 0
+                      currentAudioRef.current = null
+                    }
+                    setPlayingFileId(null)
+                  } else {
+                    try {
+                      // 이미 재생 중인 오디오가 있으면 정지
+                      if (currentAudioRef.current) {
+                        currentAudioRef.current.pause()
+                        currentAudioRef.current.currentTime = 0
+                        currentAudioRef.current = null
+                      }
+                      
+                      const audio = new Audio(SAMPLE_AUDIO.url)
+                      currentAudioRef.current = audio
+                      setPlayingFileId('sample')
+                      
+                      audio.onended = () => {
+                        setPlayingFileId(null)
+                        currentAudioRef.current = null
+                      }
+                      
+                      audio.onerror = () => {
+                        console.error('Error playing sample audio')
+                        setPlayingFileId(null)
+                        currentAudioRef.current = null
+                      }
+                      
+                      await audio.play()
+                    } catch (error) {
+                      console.error('Failed to play sample audio:', error)
+                      setPlayingFileId(null)
+                      currentAudioRef.current = null
+                    }
+                  }
+                }}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                {playingFileId === 'sample' ? '⏸ Pause' : '▶ Play'}
+              </button>
+              <button
+                onClick={async () => {
+                  await handleSampleAnalyze(SAMPLE_AUDIO.id)
+                }}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                Analyze
+              </button>
             </div>
+            
+            {/* User recorded files */}
+            {recordedFiles.map((file) => (
+              <div key={file.id} className="flex items-center gap-4 p-4 bg-brown-50 rounded-lg hover:bg-brown-100 transition-colors border border-brown-200">
+                <input
+                  type="checkbox"
+                  checked={selectedFiles.includes(file.id)}
+                  onChange={() => toggleFileSelection(file.id)}
+                  className="w-5 h-5 text-emerald-600"
+                />
+                <div className="flex-grow">
+                  <p className="font-semibold text-brown-800">{file.name}</p>
+                  <p className="text-xs text-brown-600">{new Date(file.date).toLocaleString()}</p>
+                </div>
+                <button
+                  onClick={() => playFile(file.url, file.id)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  {playingFileId === file.id ? '⏸ Pause' : '▶ Play'}
+                </button>
+                <button
+                  onClick={() => deleteFile(file.id)}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
           </div>
         </div>
-      )}
+      </div>
       
       <p className="text-center text-sm text-gray-500">
         Range analyzed: G3 (196 Hz) ~ E7 (2637 Hz)

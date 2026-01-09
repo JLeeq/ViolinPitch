@@ -2,8 +2,16 @@ import { useState, useEffect, useMemo } from 'react'
 import { analyzeWithPreviousNotes, aggregateNoteStats, colorTokenToBorderClass, formatNote } from '../utils/audioUtils'
 import { generateIntegratedReport } from '../utils/reportGenerator'
 import { noteRepository } from '../storage/noteRepository'
+import { useAuth } from '../context/AuthContext'
+import { analyzeSampleAudio } from '../utils/sampleAnalysis'
+import { useSettings } from '../context/SettingsContext'
+import SampleAudioTry from '../components/SampleAudioTry'
+import { SAMPLE_AUDIO, SAMPLE_AUDIO_ALLOWLIST } from '../lib/sampleAudio'
 
-function Analysis() {
+function Analysis({ setCurrentPage }) {
+  const { user } = useAuth()
+  const { settings } = useSettings()
+  const isGuest = !user
   const [useFlats, setUseFlats] = useState(false)
   const [recordedNotes, setRecordedNotes] = useState([])
   const [report, setReport] = useState(null)
@@ -116,8 +124,58 @@ function Analysis() {
 
   const wellTunedCount = detectedNotes.filter(note => note.accuracy >= 90).length
 
+  const handleSampleAnalyze = async (sampleId) => {
+    if (!SAMPLE_AUDIO_ALLOWLIST.includes(sampleId)) {
+      console.error('Invalid sample ID')
+      return
+    }
+
+    try {
+      // Fetch and analyze the sample audio file
+      const response = await fetch(SAMPLE_AUDIO.url)
+      if (!response.ok) {
+        throw new Error('Failed to load sample audio')
+      }
+      const audioBlob = await response.blob()
+      
+      // Analyze using the same pipeline as real recordings
+      const sampleNotes = await analyzeSampleAudio(audioBlob, sampleId, settings.concertA)
+      
+      // Save to localStorage (same format as real recordings)
+      localStorage.setItem('violin-recorded-notes', JSON.stringify(sampleNotes))
+      
+      // Reload recorded notes
+      setRecordedNotes(sampleNotes)
+      
+      // Navigate to DetailedAnalysis
+      if (setCurrentPage) {
+        setCurrentPage('detailed-analysis')
+      }
+    } catch (error) {
+      console.error('Error analyzing sample:', error)
+    }
+  }
+
   return (
     <div className="space-y-4 md:space-y-8 px-2 md:px-0">
+      {/* Sample Audio Section - Show prominently for guests */}
+      {isGuest && (
+        <SampleAudioTry 
+          sample={SAMPLE_AUDIO} 
+          onAnalyze={handleSampleAnalyze}
+          isGuest={true}
+        />
+      )}
+
+      {/* Guest fallback message */}
+      {isGuest && recordedNotes.length === 0 && !reportLoading && (
+        <div className="max-w-6xl mx-auto px-2">
+          <div className="bg-white rounded-xl shadow-lg border border-brown-200 p-6 text-center">
+            <p className="text-brown-700">No recordings yet. Try the sample audio above.</p>
+          </div>
+        </div>
+      )}
+
       {/* Sharp/Flat Toggle */}
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-center mb-6">

@@ -62,7 +62,7 @@ function Home({ setCurrentPage }) {
       icon: '🎻',
       description: 'Record your practice sessions and get instant feedback on your intonation.',
       color: 'from-violet-500 to-purple-600',
-      requiresAuth: true
+      requiresAuth: false
     },
     {
       id: 'analysis',
@@ -70,7 +70,7 @@ function Home({ setCurrentPage }) {
       icon: '📊',
       description: 'View your pitch accuracy trends, comprehensive reports, and identify areas for improvement.',
       color: 'from-rose-500 to-pink-600',
-      requiresAuth: true
+      requiresAuth: false
     }
   ]
 
