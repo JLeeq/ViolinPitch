@@ -561,14 +561,15 @@ function DetailedAnalysis({ recordings, onBack }) {
       </div>
 
       {/* Tip Box - moved below Detected Notes */}
-      <div className="max-w-4xl mx-auto mt-8">
-        <div className="bg-brown-600 border-l-4 border-accent-purple p-4 rounded-r-lg">
-          <div className="text-sm text-white">
-            {renderTipBody()}
+      {!isSample && (
+        <div className="max-w-4xl mx-auto mt-8">
+          <div className="bg-brown-600 border-l-4 border-accent-purple p-4 rounded-r-lg">
+            <div className="text-sm text-white">
+              {renderTipBody()}
+            </div>
           </div>
         </div>
-      </div>
-      
+      )}
     </div>
   )
 }

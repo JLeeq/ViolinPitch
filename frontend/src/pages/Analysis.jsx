@@ -5,8 +5,8 @@ import { noteRepository } from '../storage/noteRepository'
 import { useAuth } from '../context/AuthContext'
 import { analyzeSampleAudio } from '../utils/sampleAnalysis'
 import { useSettings } from '../context/SettingsContext'
-import SampleAudioTry from '../components/SampleAudioTry'
 import { SAMPLE_AUDIO, SAMPLE_AUDIO_ALLOWLIST } from '../lib/sampleAudio'
+import { generatePracticeReport } from '../lib/generatePracticeReport'
 
 function Analysis({ setCurrentPage }) {
   const { user } = useAuth()
@@ -16,6 +16,9 @@ function Analysis({ setCurrentPage }) {
   const [recordedNotes, setRecordedNotes] = useState([])
   const [report, setReport] = useState(null)
   const [reportLoading, setReportLoading] = useState(true)
+  const [practiceReport, setPracticeReport] = useState(null)
+  const [practiceReportLoading, setPracticeReportLoading] = useState(false)
+  const [practiceReportError, setPracticeReportError] = useState(null)
   
   // Load recorded notes from localStorage
   useEffect(() => {
@@ -25,6 +28,16 @@ function Analysis({ setCurrentPage }) {
         setRecordedNotes(JSON.parse(savedNotes))
       } catch (e) {
         console.error('Error loading recorded notes:', e)
+      }
+    }
+    
+    // Load saved practice report from localStorage
+    const savedReport = localStorage.getItem('violin-practice-report')
+    if (savedReport) {
+      try {
+        setPracticeReport(savedReport)
+      } catch (e) {
+        console.error('Error loading practice report:', e)
       }
     }
     
@@ -41,6 +54,48 @@ function Analysis({ setCurrentPage }) {
       console.error('Error generating report:', err)
     } finally {
       setReportLoading(false)
+    }
+  }
+
+  // Generate practice report
+  const handleGeneratePracticeReport = async () => {
+    try {
+      setPracticeReportLoading(true)
+      setPracticeReportError(null)
+      
+      const stored = localStorage.getItem('violin-recorded-notes')
+      if (!stored) {
+        setPracticeReportError('No practice data found. Please record first.')
+        return
+      }
+      
+      const notes = JSON.parse(stored)
+      if (!notes || !Array.isArray(notes) || notes.length === 0) {
+        setPracticeReportError('No practice data available. Please record first.')
+        return
+      }
+      
+      const report = await generatePracticeReport(notes)
+      setPracticeReport(report)
+      // Save report to localStorage
+      localStorage.setItem('violin-practice-report', report)
+    } catch (error) {
+      console.error('Error generating practice report:', error)
+      setPracticeReportError(error.message || 'Failed to generate report. Please try again.')
+    } finally {
+      setPracticeReportLoading(false)
+    }
+  }
+
+  // Copy report to clipboard
+  const handleCopyPracticeReport = () => {
+    if (practiceReport) {
+      navigator.clipboard.writeText(practiceReport).then(() => {
+        alert('Report copied to clipboard!')
+      }).catch((err) => {
+        console.error('Failed to copy report:', err)
+        alert('Failed to copy report. Please select and copy manually.')
+      })
     }
   }
 
@@ -158,23 +213,6 @@ function Analysis({ setCurrentPage }) {
 
   return (
     <div className="space-y-4 md:space-y-8 px-2 md:px-0">
-      {/* Sample Audio Section - Show prominently for guests */}
-      {isGuest && (
-        <SampleAudioTry 
-          sample={SAMPLE_AUDIO} 
-          onAnalyze={handleSampleAnalyze}
-          isGuest={true}
-        />
-      )}
-
-      {/* Guest fallback message */}
-      {isGuest && recordedNotes.length === 0 && !reportLoading && (
-        <div className="max-w-6xl mx-auto px-2">
-          <div className="bg-white rounded-xl shadow-lg border border-brown-200 p-6 text-center">
-            <p className="text-brown-700">No recordings yet. Try the sample audio above.</p>
-          </div>
-        </div>
-      )}
 
       {/* Sharp/Flat Toggle */}
       <div className="max-w-6xl mx-auto">
@@ -536,18 +574,105 @@ function Analysis({ setCurrentPage }) {
         </>
       )}
 
-      {/* No Data Message for Report */}
+      {/* No Data Message for Report / Practice Summary Report */}
       {!reportLoading && (!report || report.isEmpty) && (
         <div className="max-w-6xl mx-auto mt-12">
-          <div className="bg-white rounded-xl shadow-lg border border-brown-200 p-12 text-center">
-            <div className="text-6xl mb-4">📊</div>
-            <h3 className="text-2xl font-bold text-brown-800 mb-4 font-trajan">No Practice Data Yet</h3>
-            <p className="text-brown-700 mb-6">
-              Start recording your practice sessions to generate a comprehensive report.
-            </p>
-            <p className="text-sm text-brown-600">
-              Go to "Record & Analysis" tab and start recording to begin tracking your progress.
-            </p>
+          <div className="bg-white rounded-xl shadow-lg border border-brown-200 p-12">
+            {!practiceReport ? (
+              <>
+                <div className="text-center mb-8">
+                  <div className="text-6xl mb-4">📊</div>
+                  <h3 className="text-2xl font-bold text-brown-800 mb-4 font-trajan">No Practice Data Yet</h3>
+                  <p className="text-brown-700 mb-6">
+                    Start recording your practice sessions to generate a comprehensive report.
+                  </p>
+                  <p className="text-sm text-brown-600">
+                    Go to "Record & Analysis" tab and start recording to begin tracking your progress.
+                  </p>
+                </div>
+                
+                <div className="border-t border-brown-200 pt-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-brown-800">Practice Summary Report</h3>
+                    <button
+                      onClick={handleGeneratePracticeReport}
+                      disabled={practiceReportLoading}
+                      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    >
+                      {practiceReportLoading ? (
+                        <>
+                          <span className="animate-spin">⏳</span>
+                          Generating...
+                        </>
+                      ) : (
+                        'Generate Practice Summary'
+                      )}
+                    </button>
+                  </div>
+
+                  {practiceReportError && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                      {practiceReportError}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center mb-8">
+                  <div className="text-6xl mb-4">📊</div>
+                  <h3 className="text-2xl font-bold text-brown-800 mb-4 font-trajan">No Practice Data Yet</h3>
+                  <p className="text-brown-700 mb-6">
+                    Start recording your practice sessions to generate a comprehensive report.
+                  </p>
+                  <p className="text-sm text-brown-600">
+                    Go to "Record & Analysis" tab and start recording to begin tracking your progress.
+                  </p>
+                </div>
+                
+                <div className="border-t border-brown-200 pt-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-brown-800">Practice Summary Report</h3>
+                    <button
+                      onClick={handleGeneratePracticeReport}
+                      disabled={practiceReportLoading}
+                      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    >
+                      {practiceReportLoading ? (
+                        <>
+                          <span className="animate-spin">⏳</span>
+                          Generating...
+                        </>
+                      ) : (
+                        'Generate Practice Summary'
+                      )}
+                    </button>
+                  </div>
+
+                  {practiceReportError && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                      {practiceReportError}
+                    </div>
+                  )}
+
+                  {practiceReport && (
+                    <div className="mt-4">
+                      <div className="flex justify-end mb-2">
+                        <button
+                          onClick={handleCopyPracticeReport}
+                          className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                        >
+                          Copy Report
+                        </button>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-6 text-gray-900 whitespace-pre-line leading-relaxed font-sans">
+                        {practiceReport}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
